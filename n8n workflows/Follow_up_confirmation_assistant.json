@@ -1,0 +1,335 @@
+{
+  "name": "Follow-up confirmation assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        700
+      ],
+      "id": "1bbe79fe-9856-4402-9d80-79dc00efdcfe",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-04-17",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        940
+      ],
+      "id": "ab9e4027-3670-4f4a-aa16-fde2ddc28c4c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FAKTtUSzIYLqVlpU",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        500,
+        940
+      ],
+      "id": "928414ea-0f9f-40e0-b166-15f6ecb58753",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to sent a whatsapp message",
+        "operation": "send",
+        "phoneNumberId": "=662085020321594",
+        "recipientPhoneNumber": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Recipient_s_Phone_Number', ``, 'string') }}",
+        "textBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text_Body', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTool",
+      "typeVersion": 1,
+      "position": [
+        360,
+        940
+      ],
+      "id": "bb07a05a-f8ac-4438-aa1f-e71f73c358a2",
+      "name": "Send Whatsapp Message",
+      "webhookId": "3a727872-1a87-4945-ae36-4af119316932",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "=https://primary-production-84a9.up.railway.app/mcp/db6bc79d-ba32-41c4-b492-f0f5bbcb8fd3/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        220,
+        940
+      ],
+      "id": "a8af63b5-f6a2-43d9-b291-51f563f11a07",
+      "name": "Calendar MCP"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=not it's {{ $now.format('FFFF') }}.",
+        "options": {
+          "systemMessage": "=\nIt is now {{ $now }}.\n\nYou are an agent specialized in **appointment confirmation** for the real estate business owner. Your main responsibilities are:\n\n1. **List the events** scheduled for the next day on Google Calendar.\n2. **Extract the phone number** from the description of each event.\n3. **Extract the conversation ID** from the description which is the contact phone number (e.g. \"21248837023\") of each event.\n4. **Send a confirmation message** using the \"send_whatsapp_message\" tool, asking whether the patient confirms the appointment or prefers to reschedule.\n5. **Include in the message**:\n\n   * Client's name\n   * Appointment date and time\n\n**DO NOT INCLUDE THE CONVERSATION ID IN THE MESSAGE**\n\n## IMPORTANT\n\n* You **do not receive replies** directly; patient responses are handled by another agent.\n* Use the \"Think\" tool **before and after** performing complex operations to ensure everything went well.\n* EVERY TIME YOU SEND A MESSAGE TO THE PATIENT, **USE THE `update_memory` tool**. THIS IS VERY IMPORTANT — PLEASE DO NOT DO IT WRONG.\n* YOUR JOB IS TO NOTIFY CLIENTS FOR UPCOMING APPOINTMENTS TO CONFIRM WITH THEM, USE `send_whatsapp_message` TOOL\n* Use human language when communicating date and time\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        260,
+        700
+      ],
+      "id": "7f07ce26-6b0f-4038-a586-60adb12917d8",
+      "name": "Confirmation Assistant",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Saves the appointment information that was sent, so the receptionist knows it was sent.",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_chat_histories",
+          "mode": "list",
+          "cachedResultName": "n8n_chat_histories"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $fromAI('phone', 'contact_phone_number, Formatted with numbers only, including the country code. Example: \"+212638724429\"', 'string') }}",
+            "message": "={ \"type\": \"ai\", \"content\": \"{{ $fromAI('message', 'The same message sent to the patient.', 'string') }}\" }"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        80,
+        940
+      ],
+      "id": "c034eb4f-7299-4388-99d7-a35590d08781",
+      "name": "Update memory",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=",
+        "tableName": ""
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -60,
+        940
+      ],
+      "id": "1a47253a-2448-458b-b96e-13baa067eb5e",
+      "name": "Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "662085020321594",
+        "recipientPhoneNumber": "212722473312",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        660,
+        700
+      ],
+      "id": "47ac85cc-1eac-4050-935d-64a277d47e84",
+      "name": "Update Owner",
+      "webhookId": "0fa10215-ea60-4758-996e-86c67f8887a5",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Whatsapp Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmation Assistant": {
+      "main": [
+        [
+          {
+            "node": "Update Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "Confirmation Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Casablanca",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "45057783-5630-446f-b3f7-daadc397d423",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "461093ddfa406cde71c8f8e872d1a71c251f33208f2d0dd7e33190375be0b656"
+  },
+  "id": "XuHt4nGeaea3vFAa",
+  "tags": []
+}

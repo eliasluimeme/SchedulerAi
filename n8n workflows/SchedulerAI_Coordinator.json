@@ -1,0 +1,2780 @@
+{
+  "name": "SchedulerAI Coordinator",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3460,
+        760
+      ],
+      "id": "090df337-22e2-402c-b173-19af50d1484e",
+      "webhookId": "e9ce997a-8266-4911-8bee-88189ae6dd78",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "f40X6L7ryC8R2Z0g",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "76571f0c-c588-4d05-8178-adb06b158436",
+              "name": "OwnerName",
+              "value": "Omar",
+              "type": "string"
+            },
+            {
+              "id": "13987e8b-89de-4620-8338-8c3b819a496d",
+              "name": "OwnerPhone",
+              "value": "212722473312",
+              "type": "string"
+            },
+            {
+              "id": "497c7321-0cff-4bf6-b56d-e29b0a0082a0",
+              "name": "OwnerEmail",
+              "value": "omar@gmail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3020,
+        740
+      ],
+      "id": "5dc0459e-9abf-4d20-af9a-92fadb0327ec",
+      "name": "Business Config"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=662085020321594",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "={{ $('Convert to JSON').item.json.output.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        740
+      ],
+      "id": "cf22130f-a9fe-4352-9868-fb9ae64dbeca",
+      "name": "WhatsApp Business Cloud",
+      "webhookId": "0e6fe205-f8bf-4d56-8518-c547d070b4b6",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "04eb8046-6aec-4f4b-afc6-6ea2377cef57",
+              "name": "conversationId",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "7bd2a318-855a-4df2-9de8-a11bb16010ef",
+              "name": "clientName",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "69cd1b16-82f0-4a57-a7d5-ae8715d9f66e",
+              "name": "clientEmail",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "c091820b-6071-46cb-8a37-ae2d1c35ee74",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "bebd947e-fa47-4688-ba6e-3b17a24a5983",
+              "name": "clientProposedTimes",
+              "value": "={{ $json.client_proposed_times[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "c35f185b-edf9-4b42-b90e-70f18d894d3b",
+              "name": "confirmedTime",
+              "value": "={{ $json.confirmed_time }}",
+              "type": "string"
+            },
+            {
+              "id": "9183a2c9-a334-4809-805d-bafc4859a600",
+              "name": "message",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "434d81f6-610a-4bc9-a927-c0229c9325b6",
+              "name": "messageType",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        360
+      ],
+      "id": "72862b56-3db6-47b3-8cb7-9329c6291ab8",
+      "name": "Client context"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('text input').first().json.input }}",
+        "options": {
+          "systemMessage": "=# 1. Identity & Role\n\nYou are SchedulerAi, an inteligent AI responsible for managing scheduling conversations with CLIENTs. You collect appointment details and confirm OWNER decisions.\n\nCurrent Time: {{ $now }}\nOWNER_PHONE_NUMBER: 212722473312\nOWNER_NAME: {{ $('Business Config').first().json.OwnerName }}\nOWNER_EMAIL: {{ $('Business Config').first().json.OwnerEmail }}\n\nYou are talking to: {{ $('WhatsApp Trigger').first().json.contacts[0].wa_id == 212722473312 ? \"OWNER\" : \"CLIENT\" }}\nconversation_id: {{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}\n\n# 2. Tools\n\n- Think\n\n- Supabase Agent: Use this tool to talk to a sub-agent that's going to help you get and update client conversation context and status from the `client` table fields: conversation_id (which is client phone number), name, email, status, client_proposed_times, owner_proposed_times, confirmed_time.\n\n- send_whatsapp_message: Use this tool to notify the owner about a new appointment, include the CLIENT details like name and phone number for reference.\n\n- react_to_message: Use this tool to react to Whatsapp messages when needed.\n\n- create_calendar_event: Create events in Google Calendar.\n\n- retrieve_calendar_events: Retrieve events from Google Calendar within specified date ranges.\n\n# 3. State Responsibilities\n\n## When talking to CLIENT\n\n### NEW_CONVERSATION_STARTED\n\nGreet the client\n\nAsk for missing details: name, email, proposed date/time\n\nAdd CLIENT to database if it doesnt exist (first time client) via Supabase Agent\n\nTransition to: AWAITING_CLIENT_AVAILABILITY\n\n### AWAITING_CLIENT_AVAILABILITY\n\nParse message for name, email, and client_proposed_time\n\nSave via Supabase Agent\n\nNotify OWNER using send_whatsapp_message\n\nStore message ID in owner_message_id for OWNER reply mapping\n\nTransition to: AWAITING_OWNER_AVAILABILITY\n\n### CLIENT RESCHEDULING REQUEST\n\nParse message for the client desired date and time for rescheduling\n\nUpadate Supabase set new client_proposed_time and Transition to: AWAITING_OWNER_CONFIRMATION\n\nNotify OWNER with the rescheduling request for confirmation\n\n### CANCELED_BY_CONTACT\n\nAcknowledge cancellation\n\nNotify OWNER\n\nMark status in Supabase via Supabase Agent\n\nUpdate Calendar and remove appointment if already scheduled\n\n## When talking to OWNER\n\n### AWAITING_OWNER_AVAILABILITY\n\nMatch OWNER response to CLIENT using client phone number (conversation_id), get context from your conversation history witht the OWNER.\n\nYou should think and match OWNER response to referred CLIENT, if you dont have context or enough information ask for clarification from the OWNER to refer to CLIENT using its phone number (conversation_id)\n\nAlways use CLIENT phone number as conversation_id (e.g. conversation_id: 2126455983) to perform actions and refer to the correct CLIENT.\n\n- If OWNER confirming client proposal:\n\nSet confirmed_time = client_proposed_time\n\nUpdate Supabase to Transition to: SCHEDULED_CONFIRMED\n\nBook an appointment in calendar using calendar tools, and invite both parties to the meeting, include client phone number (conversation_id). Before booking the appointment check calendar to avoid conflicts.\n\nMAKE SURE TO Notify CLIENT of scheduled appointment\n\n- If OWNER proposing new time:\n\nUpdate database to Save owner_proposed_time and Transition to: AWAITING_CLIENT_AVAILABILITY\n\nNotify CLIENT of OWNER decision to confirm availability for the OWNER new proposed time\n\n### OWNER RESCHEDULING REQUEST\n\nParse message for the owner desired date and time for rescheduling\n\nUpadate Supabase set new owner_proposed_time and Transition to: AWAITING_CLIENT_CONFIRMATION\n\nNotify OWNER with the rescheduling request for confirmation\n\n### CANCELED_BY_OWNER\n\nAcknowledge cancellation\n\nNotify CLIENT\n\nMark status in Supabase and Transition to CANCELED_BY_OWNER\n\nUpdate calendar\n\n# 4. Before you output:\n\n# Think\n1. Who am I talking to?\n2. What is the current state?\n3. What information is already known?\n4. What is the user trying to do?\n5. What actions must I take?\n6. What tools must I invoke?\n\n# 5. Output Format\n\nAlways make sure to respect and respond with this output format:\n{\n    \"output\": {\n      \"reply\": \"Hello! I'm SchedulerAi, your virtual assistant for booking appointments with Omar.\\n\\nTo help you schedule your appointment, could you please tell me your name, email address, and your preferred date and time for the meeting?\",\n      \"whatsapp_notification\": {\n          \"contact\": \"contact phone number (conversation_id) notified via `send_whatsapp_message` tool || null if tool not used\",\n          \"message\": \"The notification message sent to contact || null if tool not used\"\n      }\n    }\n}\n\n# 6. Calendar Management Best Practices\n\nAlways work with the current date context when processing calendar requests\nUse proper date formatting: YYYY-MM-DD HH:mm:ss for all calendar operations\nFor event creation, collect all required information:\n\nstart_date: Exact start date and time\nend_date: Exact end date and time\nevent_title: Event title (suggest in uppercase if not provided)\nevent_description: Generate brief description and confirm with user\n\n\nFor event retrieval, clarify date ranges:\n\n\"today\" = current date\n\"last week\" = Monday to Friday of previous week\n\"this weekend\" = Saturday and Sunday of current week\n\n\nInvite both parties to the event, the owner (organizer), and client (attendee)\nAlways include CLIENT phone number (conversation_id) with the description\nValidate all date inputs\nProvide suggestions for missing event details\nConfirm calendar actions before execution\nWrite clean, readable SQL with proper formatting\nUse parameterized queries when dealing with user input to prevent SQL injection\nPrefer explicit column names over SELECT *\nUse appropriate JOINs instead of subqueries when more efficient\nInclude meaningful aliases for complex queries\nUse LIMIT clauses for large datasets when appropriate\n\n# 7. Important rules\n\n- EVERY TIME YOU USE `send_whatsapp_message` TOOL AND SEND A WHATSAPP MESSAGE NOTIFICATION VIA `send_whatsapp_message` TOOL, INCLUDE CONTACT AND MESSAGE IN `whatsapp_notification` IN YOUR OUTPUT.\n- when collecting date and time convert it to ISO before storing in database. And when communicating date and time communicate it with human language (e.g. tomorrow, June 22nd, at 8:00 AM)\n- when the OWNER confirms the appointment make sure to book the appointment in calendar and notify the CLIENT. If The client asks for updates or status check the calendar.\n- Before responding to any query or request always refer to client status updates from supabase agent and check the conversation history.\n- Always make sure to respect the output format. Populate `whatsapp_notification` if `send_whatsapp_message` tool used otherwise populate with null.",
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        300,
+        520
+      ],
+      "id": "403811b1-576a-4e68-8d72-413671bdfea4",
+      "name": "AI Agent",
+      "alwaysOutputData": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-05-20",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        180,
+        740
+      ],
+      "id": "b402a32a-38ed-4f73-ac2d-c308d1e698e2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FAKTtUSzIYLqVlpU",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "25edc3d5-37be-49b6-9bfa-b9d470358d41",
+              "leftValue": "={{ $json.messages[0] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f858d37b-7ae8-4068-a59f-b7dd76080554",
+              "leftValue": "={{ $json.messages[0].from }}",
+              "rightValue": "212704509060",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3300,
+        760
+      ],
+      "id": "b86917da-d94d-4c50-9aad-79ad13542f32",
+      "name": "If message"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        460,
+        740
+      ],
+      "id": "0e102ea4-6e89-4375-b1c8-a3336c6dda32",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        740
+      ],
+      "id": "2fd2c65a-e915-4652-a159-c24c04169d1a",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  to_jsonb(c) - 'id' || jsonb_build_object(\n    'chat_feed', jsonb_build_object(\n      \n      -- Client Messages\n      'client_conversation', (\n        SELECT jsonb_agg(\n          jsonb_build_object(\n            'sender', cc.sender,\n            'message', cc.message,\n            'created_at', cc.created_at\n          )\n          ORDER BY cc.created_at\n        )\n        FROM public.ClientConversation cc\n        WHERE cc.client_id = c.conversation_id\n      ),\n\n      -- Owner Messages\n      'owner_context', (\n        SELECT jsonb_agg(\n          jsonb_build_object(\n            'sender', oc.sender,\n            'message', oc.message,\n            'created_at', oc.created_at\n          )\n          ORDER BY oc.created_at\n        )\n        FROM public.OwnerContext oc\n        WHERE oc.client_id = c.conversation_id\n      )\n    )\n  ) AS client_with_chat\n\nFROM public.Client c\nWHERE c.conversation_id = '{{ $('Client context').item.json.conversationId }}';  -- Replace as needed\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        540,
+        1380
+      ],
+      "id": "9ed5741d-01c7-440a-bae0-47c941e6cd92",
+      "name": "Get Context",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f989542b-c49f-4116-9e9f-28b8679e064e",
+              "leftValue": "={{ $json.conversation_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -980,
+        520
+      ],
+      "id": "3d4749d0-f488-4892-b51b-be255dcd15b7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "client",
+          "mode": "list",
+          "cachedResultName": "client"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reminder_sent": false,
+            "conversation_id": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+            "status": "NEW_CONVERSATION_STARTED"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "NEW_CONVERSATION_STARTED",
+                  "value": "NEW_CONVERSATION_STARTED"
+                },
+                {
+                  "name": "AWAITING_CLIENT_AVAILABILITY",
+                  "value": "AWAITING_CLIENT_AVAILABILITY"
+                },
+                {
+                  "name": "AWAITING_OWNER_CONFIRMATION",
+                  "value": "AWAITING_OWNER_CONFIRMATION"
+                },
+                {
+                  "name": "AWAITING_OWNER_ALTERNATIVE_TIMES",
+                  "value": "AWAITING_OWNER_ALTERNATIVE_TIMES"
+                },
+                {
+                  "name": "AWAITING_FINAL_CONFIRMATION",
+                  "value": "AWAITING_FINAL_CONFIRMATION"
+                },
+                {
+                  "name": "AWAITING_FINAL_CONFIRMATION_FROM_OWNER_PROPOSAL",
+                  "value": "AWAITING_FINAL_CONFIRMATION_FROM_OWNER_PROPOSAL"
+                },
+                {
+                  "name": "SCHEDULED_CONFIRMED",
+                  "value": "SCHEDULED_CONFIRMED"
+                },
+                {
+                  "name": "CANCELED_BY_CONTACT",
+                  "value": "CANCELED_BY_CONTACT"
+                },
+                {
+                  "name": "REJECTED_BY_OWNER",
+                  "value": "REJECTED_BY_OWNER"
+                },
+                {
+                  "name": "TIMED_OUT_CLIENT_UNRESPONSIVE",
+                  "value": "TIMED_OUT_CLIENT_UNRESPONSIVE"
+                },
+                {
+                  "name": "TIMED_OUT_OWNER_UNRESPONSIVE",
+                  "value": "TIMED_OUT_OWNER_UNRESPONSIVE"
+                },
+                {
+                  "name": "CONFLICT_RESOLUTION_NEEDED",
+                  "value": "CONFLICT_RESOLUTION_NEEDED"
+                }
+              ]
+            },
+            {
+              "id": "client_proposed_times",
+              "displayName": "client_proposed_times",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "owner_proposed_times",
+              "displayName": "owner_proposed_times",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confirmed_time",
+              "displayName": "confirmed_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_updated",
+              "displayName": "last_updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reminder_sent",
+              "displayName": "reminder_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -780,
+        540
+      ],
+      "id": "5f5713e5-9ead-4910-b3dc-7c0be055734a",
+      "name": "Create Client",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Makes an HTTP request to react to a Whatsapp message",
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v23.0/{{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer EAAOEMWqVYRkBO1qP3yfAPVxcCgRbZC6Eyv0Nk2vZBA07bmw0D93tF1kbMOWTWZBOXb26nH2ZC6ph1lbekRTcRNkLXbEhy0R2jWywt4KYFjg6Nj45BmoZC2SsTT1NUWMY0uUIee8siHOgk3tHHcEHNjE43yMGsBHbZCNlI1JZBJfLnw1F9fYn17J4Tf34sKVYwQw5AZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', ``, 'json') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        740
+      ],
+      "id": "f3fa67a6-ebb1-4b47-8217-8b76a4c8c28e",
+      "name": "React to message"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -440,
+        380
+      ],
+      "id": "bcca8e86-a3ea-406b-bd23-24b26d87ef3e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45164ef9-a084-473b-a9dd-7037dafe8389",
+              "name": "conversationId",
+              "value": "={{ $json.conversation_id }}",
+              "type": "string"
+            },
+            {
+              "id": "25a06b18-88a8-4a84-90be-a3071a852ef5",
+              "name": "clientName",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "c4265596-36da-47d6-9691-5b9c8b3fcc56",
+              "name": "clientEmail",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "64e253a9-c75a-4cc9-973b-76ccbb597697",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "047355c0-429b-4c3d-b238-c0c49d74e54c",
+              "name": "clientProposedTimes",
+              "value": "={{ $json.client_proposed_times }}",
+              "type": "string"
+            },
+            {
+              "id": "b907ccf0-f72f-410e-8f3a-e6156446bbb9",
+              "name": "confirmedTime",
+              "value": "={{ $json.confirmed_time }}",
+              "type": "string"
+            },
+            {
+              "id": "a83927ef-02ae-4058-a19f-9f656e6a0e9b",
+              "name": "message",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "46fc857c-a07a-42ca-baee-b249938396ad",
+              "name": "messageType",
+              "value": "={{ $('WhatsApp Trigger').item.json.messages[0].type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        540
+      ],
+      "id": "96d871b5-bd19-4276-8447-7afce97857eb",
+      "name": "New Client Context"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM public.Client c\nWHERE c.conversation_id = '{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}';  \n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1140,
+        520
+      ],
+      "id": "14aa0d46-60ce-454f-b017-049368e81d08",
+      "name": "Get Client",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2320,
+        960
+      ],
+      "id": "a80d6fff-9a52-48f3-acaa-f51d44eb7bcf",
+      "name": "Wait",
+      "webhookId": "689b51a0-89fe-459d-a560-a59c79797611"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tmp_messages",
+          "mode": "list",
+          "cachedResultName": "tmp_messages"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $('WhatsApp Trigger').item.json.messages[0].timestamp }}",
+            "contact_id": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+            "message": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2460,
+        960
+      ],
+      "id": "4c2ad549-cd3c-45d9-bd9d-e6b9f8565ad4",
+      "name": "Set messages",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tmp_messages",
+          "mode": "list",
+          "cachedResultName": "tmp_messages"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "=contact_id",
+              "value": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}"
+            }
+          ]
+        },
+        "sort": {
+          "values": [
+            {
+              "column": "timestamp"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2180,
+        960
+      ],
+      "id": "7aac8b68-f930-4eac-9a0a-dcefe143af9f",
+      "name": "Get Messages",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const combinedMessages = $input.all()\n  .map(item => item.json.message)\n  .join('. ');\n\nreturn [{\n  json: {\n    combined_message: combinedMessages\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2040,
+        960
+      ],
+      "id": "8095c224-a5bf-467f-8964-dddf0c83a1de",
+      "name": "Overlapping Messages"
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tmp_messages",
+          "mode": "list",
+          "cachedResultName": "tmp_messages"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "contact_id",
+              "value": "={{ $('WhatsApp Trigger').first().json.contacts.first().wa_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1900,
+        960
+      ],
+      "id": "991ad291-d8e0-451b-8046-ddda404617e7",
+      "name": "Delete Message Queue",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Business Config\nThis should be set in **env**",
+        "height": 320,
+        "width": 220,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3080,
+        580
+      ],
+      "typeVersion": 1,
+      "id": "c1b1eea5-8f73-464d-a855-8d160989079d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Input Type\nRoute based on message type:\n- Audio\n- Image\n- Text",
+        "height": 320,
+        "width": 220,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2820,
+        580
+      ],
+      "typeVersion": 1,
+      "id": "22b6361b-d7a0-43d3-9dc1-afc12756f595",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Text Queue\nWait and queue messages for full context",
+        "height": 260,
+        "width": 800,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2520,
+        860
+      ],
+      "typeVersion": 1,
+      "id": "80bb0c5c-9cd4-4e19-b4c9-0fed5187d501",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Client Context\nGet Client conversation context if any or create new Client record",
+        "height": 360,
+        "width": 960,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1220,
+        340
+      ],
+      "typeVersion": 1,
+      "id": "ccffbc7c-435b-4039-8a2b-8d2c498254a7",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Status\nMark Whatsapp read and typing status",
+        "height": 340,
+        "width": 220,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -140,
+        500
+      ],
+      "typeVersion": 1,
+      "id": "6b3db63a-a59b-4711-9f86-32f20030ec99",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v23.0/{{ $('WhatsApp Trigger').first().json.metadata.phone_number_id }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer EAAOEMWqVYRkBO1qP3yfAPVxcCgRbZC6Eyv0Nk2vZBA07bmw0D93tF1kbMOWTWZBOXb26nH2ZC6ph1lbekRTcRNkLXbEhy0R2jWywt4KYFjg6Nj45BmoZC2SsTT1NUWMY0uUIee8siHOgk3tHHcEHNjE43yMGsBHbZCNlI1JZBJfLnw1F9fYn17J4Tf34sKVYwQw5AZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"status\": \"read\",\n  \"message_id\": \"{{ $('WhatsApp Trigger').first().json.messages.first().id }}\",\n  \"typing_indicator\": {\n    \"type\": \"text\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        680
+      ],
+      "id": "8ed71f49-28b8-4370-b160-25d8d884f554",
+      "name": "Mark Read/Typing Status"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "client",
+          "mode": "list",
+          "cachedResultName": "client"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reminder_sent": false,
+            "conversation_id": "={{ $('Merge').item.json.conversationId }}",
+            "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('name', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}",
+            "client_proposed_times": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('client_proposed_times', ``, 'string') }}",
+            "confirmed_time": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('confirmed_time', ``, 'string') }}",
+            "owner_reply_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('owner_reply_id', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "conversation_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": false,
+              "options": [
+                {
+                  "name": "NEW_CONVERSATION_STARTED",
+                  "value": "NEW_CONVERSATION_STARTED"
+                },
+                {
+                  "name": "AWAITING_CLIENT_AVAILABILITY",
+                  "value": "AWAITING_CLIENT_AVAILABILITY"
+                },
+                {
+                  "name": "AWAITING_OWNER_CONFIRMATION",
+                  "value": "AWAITING_OWNER_CONFIRMATION"
+                },
+                {
+                  "name": "AWAITING_OWNER_ALTERNATIVE_TIMES",
+                  "value": "AWAITING_OWNER_ALTERNATIVE_TIMES"
+                },
+                {
+                  "name": "AWAITING_FINAL_CONFIRMATION",
+                  "value": "AWAITING_FINAL_CONFIRMATION"
+                },
+                {
+                  "name": "AWAITING_FINAL_CONFIRMATION_FROM_OWNER_PROPOSAL",
+                  "value": "AWAITING_FINAL_CONFIRMATION_FROM_OWNER_PROPOSAL"
+                },
+                {
+                  "name": "SCHEDULED_CONFIRMED",
+                  "value": "SCHEDULED_CONFIRMED"
+                },
+                {
+                  "name": "CANCELED_BY_CONTACT",
+                  "value": "CANCELED_BY_CONTACT"
+                },
+                {
+                  "name": "REJECTED_BY_OWNER",
+                  "value": "REJECTED_BY_OWNER"
+                },
+                {
+                  "name": "TIMED_OUT_CLIENT_UNRESPONSIVE",
+                  "value": "TIMED_OUT_CLIENT_UNRESPONSIVE"
+                },
+                {
+                  "name": "TIMED_OUT_OWNER_UNRESPONSIVE",
+                  "value": "TIMED_OUT_OWNER_UNRESPONSIVE"
+                },
+                {
+                  "name": "CONFLICT_RESOLUTION_NEEDED",
+                  "value": "CONFLICT_RESOLUTION_NEEDED"
+                }
+              ]
+            },
+            {
+              "id": "client_proposed_times",
+              "displayName": "client_proposed_times",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner_proposed_times",
+              "displayName": "owner_proposed_times",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "confirmed_time",
+              "displayName": "confirmed_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_updated",
+              "displayName": "last_updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "reminder_sent",
+              "displayName": "reminder_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner_reply_id",
+              "displayName": "owner_reply_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "owner_reply_message",
+              "displayName": "owner_reply_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        440,
+        1380
+      ],
+      "id": "bfb72236-078d-4910-bd9a-f5e5fd7a3bcd",
+      "name": "Update Context",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to sent a whatsapp message",
+        "operation": "send",
+        "phoneNumberId": "=662085020321594",
+        "recipientPhoneNumber": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Recipient_s_Phone_Number', ``, 'string') }}",
+        "textBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text_Body', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTool",
+      "typeVersion": 1,
+      "position": [
+        760,
+        740
+      ],
+      "id": "51efcd2e-4d4a-4861-9a04-219ccca483ca",
+      "name": "Send Whatsapp Message",
+      "webhookId": "3a727872-1a87-4945-ae36-4af119316932",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get list of all tables in database",
+        "operation": "executeQuery",
+        "query": "SELECT table_schema, table_name\nFROM information_schema.tables\nWHERE table_type = 'BASE TABLE' AND table_schema = 'public';",
+        "options": {}
+      },
+      "id": "890b3a88-8a31-4860-b988-71a23a2c59b3",
+      "name": "DB Schema1",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        800,
+        1380
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get table definition to find all columns and types.",
+        "operation": "executeQuery",
+        "query": "SELECT \n c.column_name,\n c.data_type,\n c.is_nullable,\n c.column_default,\n tc.constraint_type,\n ccu.table_name AS referenced_table,\n ccu.column_name AS referenced_column\nFROM \n information_schema.columns c\nLEFT JOIN \n information_schema.key_column_usage kcu \n ON c.table_name = kcu.table_name \n AND c.column_name = kcu.column_name\nLEFT JOIN \n information_schema.table_constraints tc \n ON kcu.constraint_name = tc.constraint_name\n AND tc.constraint_type = 'FOREIGN KEY'\nLEFT JOIN\n information_schema.constraint_column_usage ccu\n ON tc.constraint_name = ccu.constraint_name\nWHERE \n c.table_name = '{{ $fromAI(\"table_name\") }}' -- Your table name\n AND c.table_schema = 'public' -- Ensure it's in the right schema\nORDER BY \n c.ordinal_position;\n",
+        "options": {}
+      },
+      "id": "0bf94c67-289c-491b-b14f-c5ea1d79d678",
+      "name": "Get table definition1",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        940,
+        1380
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Run custom SQL queries using knowledge about Output structure to provide needed response for user request.\nUse ->> operator to extract JSON data.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI(\"query\",\"SQL query for PostgreSQL DB in Supabase\") }}",
+        "options": {}
+      },
+      "id": "a13ca785-ec72-42a3-84b0-6858e2c8fadc",
+      "name": "Run SQL Query1",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        660,
+        1380
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Use this tool to get or update a record in db to track progress and status",
+        "workflowId": {
+          "__rl": true,
+          "value": "2Fh3eF521jZjWNN7",
+          "mode": "list",
+          "cachedResultName": "_supabase sub agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', `Get or Update a record in db`, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        740
+      ],
+      "id": "c3bf7970-c17a-41f1-b502-34bb13dad2e0",
+      "name": "Supabase Agent"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool when you’re asked to retrieve events data.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "akryelias@gmail.com",
+          "mode": "id"
+        },
+        "options": {
+          "timeMin": "={{ $fromAI('start_date') }}",
+          "timeMax": "={{ $fromAI('end_date') }}"
+        }
+      },
+      "id": "1a707708-1f9f-48d7-b6b8-3d7d95cc9657",
+      "name": "Google Calendar - Get Events",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1080,
+        740
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "0uriBedhHydFrgtC",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this Google Calendar tool when you are asked to create an event.",
+        "calendar": {
+          "__rl": true,
+          "value": "akryelias@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $fromAI('start_date') }} ",
+        "end": "={{ $fromAI('end_date') }} ",
+        "additionalFields": {
+          "attendees": [],
+          "description": "={{ $fromAI('event_description') }} ",
+          "summary": "={{ $fromAI('event_title') }} "
+        }
+      },
+      "id": "4eadcbd7-77be-4d0a-87b7-56d1cef2ffec",
+      "name": "Google Calendar - Create events",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1240,
+        740
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "0uriBedhHydFrgtC",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $('AI Agent2').item.json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2800,
+        540
+      ],
+      "id": "c936c4c7-2fb2-4db8-9bf9-cf4a33047943",
+      "name": "Generate Audio",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=662085020321594",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "messageType": "audio",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        3160,
+        540
+      ],
+      "id": "9508e89d-39f3-4bbd-b659-1ee4a24c1a84",
+      "name": "Respond with Audio",
+      "webhookId": "d18b2c98-84e4-43cf-a532-0c47d5161684",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and change the MIME type of binary data\nfor (const item of $input.all()) {\n  // Check if the item has binary data\n  if (item.binary) {\n    // Find the binary property name (assuming there's at least one)\n    const binaryPropertyNames = Object.keys(item.binary);\n    \n    for (const propName of binaryPropertyNames) {\n      // If the MIME type is 'audio/mp3', change it to 'audio/mpeg'\n      if (item.binary[propName].mimeType === 'audio/mp3') {\n        item.binary[propName].mimeType = 'audio/mpeg';\n      }\n    }\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2980,
+        540
+      ],
+      "id": "851eff6e-4078-42d3-a7c5-42d1733be771",
+      "name": "Fix Mime Type",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## Audio\nDownload and transcribe audio\n",
+        "height": 260,
+        "width": 800
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2520,
+        300
+      ],
+      "id": "e96688e1-4ba1-46f3-865a-a116e0caad13",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## Image\nDownload and analyze image",
+        "height": 260,
+        "width": 800,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2520,
+        580
+      ],
+      "id": "a265a207-94e3-4a6c-b2ad-bab016c83f98",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b6907c4b-3050-46d2-b995-9144937588ea",
+              "name": "=input",
+              "value": "={{ $json.text || $('Overlapping Messages').item.json.combined_message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1620,
+        660
+      ],
+      "id": "30675ff7-fc43-4fca-8b89-7f46082a6f0e",
+      "name": "text input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b9d1d759-f585-4791-a743-b9d72951e77c",
+              "leftValue": "={{ $('WhatsApp Trigger').first().json.messages[0].audio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        680
+      ],
+      "id": "217d156d-782b-4a2a-814e-33ff6aa7f7fb",
+      "name": "If Audio"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        380
+      ],
+      "id": "537a1997-e35f-4646-b9cc-afdfb39357ae",
+      "name": "Download Audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YCjIq8WRyejKWxr5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        380
+      ],
+      "id": "dc14b068-52df-4c4c-97f9-ae9929650b09",
+      "name": "Get Audio URL",
+      "webhookId": "87caa300-7204-47b5-959a-94f4a8fbf8cf",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2080,
+        380
+      ],
+      "id": "49724f07-5edf-4037-a2d3-02816c48e65b",
+      "name": "Transcribe Audio",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "219577d5-b028-48fc-90be-980f4171ab68",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1920,
+        380
+      ],
+      "id": "f65a3b1b-9b06-451b-909b-17623527f2ac",
+      "name": "Audio Prompt",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        660
+      ],
+      "id": "71f9957e-e07d-42aa-b032-1461b9cfea79",
+      "name": "Download Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YCjIq8WRyejKWxr5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        660
+      ],
+      "id": "5b6c4fb2-248e-45dd-9ac8-13224afecfb1",
+      "name": "Get Image URL",
+      "webhookId": "280bd5de-32d7-4d8f-93d2-e91e3b0bc161",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "W6xx0C5ZZMLjExRg",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=Describe the image in detail.",
+        "inputType": "base64",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2080,
+        660
+      ],
+      "id": "4a1da1c7-765d-4ac9-9729-6f034f17dffd",
+      "name": "Analyze Image",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67552183-de2e-494a-878e-c2948e8cb6bb",
+              "name": "text",
+              "value": "=# The user provided the following image and text.\n\n## IMAGE CONTENT:\n{{ $json.content }}\n\n## USER MESSAGE:\n{{ $('WhatsApp Trigger1').item.json.messages[0].image.caption || \"Describe the image\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1920,
+        660
+      ],
+      "id": "41028c64-2162-4347-afd4-7e340b8bb1fc",
+      "name": "Image + Text Prompt",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output;\n\nconst json = raw.replace(/```json\\n?/, '').replace(/```$/, '');\n\nconst clean = json.replace(/,\\s*([\\]}])/g, '$1');\n\nconst parsed = JSON.parse(clean);\n\nreturn parsed;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        660
+      ],
+      "id": "8f186602-b66d-4184-a52e-95e275db7a77",
+      "name": "Convert to JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "206fb5ab-f079-4739-865c-db94fa19ef82",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+              "rightValue": "={{ $('Business Config').item.json.OwnerPhone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1460,
+        660
+      ],
+      "id": "be9b99de-a732-4658-b588-7eef97772b96",
+      "name": "If Client"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c71c6a85-f1c1-4ae0-b2f1-0d5274ceadba",
+              "name": "reply",
+              "value": "={{ $json.output.reply }}",
+              "type": "string"
+            },
+            {
+              "id": "699dc4a1-382b-4c0b-b645-5ec5ab3d7f1d",
+              "name": "notification_contact",
+              "value": "={{ $json.output.whatsapp_notification.contact }}",
+              "type": "string"
+            },
+            {
+              "id": "631e4742-5b00-454f-9996-8f5e4e87bba3",
+              "name": "notification_message",
+              "value": "={{ $json.output.whatsapp_notification.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        660
+      ],
+      "id": "5e07ca20-3d41-468b-94bf-a050a70fe55d",
+      "name": "Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "90999b89-ca8b-4d6f-8b52-6bcb6739c203",
+              "leftValue": "={{ $json.notification_contact }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f87eac26-9672-4936-9e89-a73d05b7f4aa",
+              "leftValue": "={{ $json.notification_message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        660
+      ],
+      "id": "83357f4f-36ed-4163-aecf-cd4a6bb9b4df",
+      "name": "If Notified Via Whatsapp Tool"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_chat_histories",
+          "mode": "list",
+          "cachedResultName": "n8n_chat_histories"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $json.notification_contact }}",
+            "message": "={\"type\": \"ai\", \"content\": \"{{ $json.notification_message }}\", \"tool_calls\": [], \"additional_kwargs\": {}, \"response_metadata\": {}, \"invalid_tool_calls\": []}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2240,
+        460
+      ],
+      "id": "367137a6-df16-4105-879a-b3de4550fb2b",
+      "name": "Insert message For Conversation Full Context",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "Supabase mcp"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 1,
+      "position": [
+        500,
+        1160
+      ],
+      "id": "e79a5435-9741-47ab-bcce-8056e6c77d72",
+      "name": "Supabase MCP Server Trigger",
+      "webhookId": "6f137b37-c626-4c43-99b3-0fa5d0b18a7d"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://primary-production-84a9.up.railway.app/mcp/Supabase mcp/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        600,
+        900
+      ],
+      "id": "aae67609-cae9-46c2-aa87-303e46b4a1b7",
+      "name": "Supabase MCP Client"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://primary-production-84a9.up.railway.app/mcp/db6bc79d-ba32-41c4-b492-f0f5bbcb8fd3/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        900
+      ],
+      "id": "7e05ef99-6c08-4984-b0c8-dab058180b52",
+      "name": "Calendar MCP Client"
+    },
+    {
+      "parameters": {
+        "content": "## Get Response\nConvert output to JSON format\n",
+        "height": 340,
+        "width": 220,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        500
+      ],
+      "typeVersion": 1,
+      "id": "801362f7-b346-4d7c-a782-2030bc09192e",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Set Response\n",
+        "height": 340,
+        "width": 220,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1700,
+        500
+      ],
+      "typeVersion": 1,
+      "id": "27326678-63c5-4744-ad00-6871445cd088",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Update context\nUpdate db with whatsapp message and contact phone number sent by the agent via the send whatsapp message tool\n\n",
+        "height": 340,
+        "width": 220,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2180,
+        300
+      ],
+      "typeVersion": 1,
+      "id": "69dfd456-4cd3-423c-b0d0-d7bf9c725c0a",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "# Sending Response\n",
+        "height": 540,
+        "width": 920,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2460,
+        440
+      ],
+      "id": "0ffc8aa4-279e-40b9-9483-0792705ba853",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# Generating Response\n",
+        "height": 620,
+        "width": 1240,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        140,
+        420
+      ],
+      "id": "1412d9a1-734a-4a12-9f2a-469eeca564b3",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b7b64446-f1ea-4622-990c-22f3999a8269",
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "202af928-a324-411a-bf15-68a349e7bf9e",
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "08fd0c80-307e-4f45-b1de-35192ee4ec5e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2760,
+        740
+      ],
+      "id": "d3c44a00-175f-4c88-b7c8-d4cbbfde0ae3",
+      "name": "Check Input Type1"
+    },
+    {
+      "parameters": {
+        "content": "# Supabase MCP\nYou can replace Supabase agent with this Supabase MCP",
+        "height": 240,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        300,
+        1060
+      ],
+      "id": "23d9ac45-a106-4463-b8e5-e35462a8f52e",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "content": "## [Supabase](https://supabase.com/) Table Configuration Tutorial\n\n### Configure Tables\n\n1. Create an account and project (use a strong password!!)\n2. In the sidebar, click on \"SQL Editor\"\n3. Paste those SQL queries one by one and click run:\n- Client table: \n`create table public.client (\n  id uuid not null default gen_random_uuid (),\n  conversation_id text null,\n  name text null,\n  email text null,\n  status public.client_status null,\n  client_proposed_times text[] null,\n  owner_proposed_times text[] null,\n  confirmed_time timestamp without time zone null,\n  last_updated timestamp with time zone null default (now() AT TIME ZONE 'utc'::text),\n  reminder_sent boolean null default false,\n  owner_message_id text null,\n  owner_reply_message text null,\n  created_at timestamp with time zone not null default (now() AT TIME ZONE 'utc'::text),\n  constraint client_pkey primary key (id),\n  constraint client_conversation_id_key unique (conversation_id)\n) TABLESPACE pg_default;`\n- Memory table:\n`create table public.n8n_chat_histories (\n  id serial not null,\n  session_id character varying(255) not null,\n  message jsonb not null,\n  created_at timestamp with time zone not null default (now() AT TIME ZONE 'utc'::text),\n  constraint n8n_chat_histories_pkey primary key (id)\n) TABLESPACE pg_default;`\n4. In the sidebar, click on Database, Enumerated Types, and add those types with name set to `client_status`:\n`NEW_CONVERSATION_STARTED, AWAITING_CLIENT_AVAILABILITY, AWAITING_OWNER_AVAILABILITY, AWAITING_CLIENT_CONFIRMATION, AWAITING_OWNER_CONFIRMATION, AWAITING_FINAL_CONFIRMATION_FROM_OWNER_PROPOSAL, SCHEDULED_CONFIRMED, CANCELED_BY_CONTACT, CANCELED_BY_OWNER, TIMED_OUT_CLIENT_UNRESPONSIVE, TIMED_OUT_OWNER_UNRESPONSIVE, CONFLICT_RESOLUTION_NEEDED`\n\n### Configure Credentials\n\n1. At the top bar of Supabase, click on \"Connect\"\n1. Scroll down to the \"Session pooler\" section > click on \"View parameters\"\n1. Open the \"Test Credential - Supabase\" node next to it\n1. In the \"Credential to connect with\" field, click on \"Create new credential\"\n1. Fill in the \"Host\", \"Database\", \"User\", and \"Password\" fields (the last one is the password you used to create the project)\n1. Save the credential and run the node to confirm success\n\n",
+        "height": 1100,
+        "width": 660,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4860,
+        -200
+      ],
+      "id": "0057157c-b097-4ec8-8ff9-49f664d4d8cd",
+      "name": "Sticky Note18"
+    },
+    {
+      "parameters": {
+        "content": "[![Supabase logo](https://supabase.com/_next/image?url=https%3A%2F%2Ffrontend-assets.supabase.com%2Fwww%2F6d09404779ac%2F_next%2Fstatic%2Fmedia%2Fsupabase-logo-wordmark--dark.b36ebb5f.png&w=384&q=75&dpl=dpl_H9LPzQFg38dVjzWbzENRNVbXVDjJ)](https://supabase.com/)",
+        "height": 80,
+        "width": 180,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4400,
+        -160
+      ],
+      "id": "3a51fd8f-18e5-49f5-943c-2de4b74b114e",
+      "name": "Sticky Note27"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) FROM client;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4400,
+        720
+      ],
+      "id": "25defdd1-6c99-47a2-8d65-f1f4ee757154",
+      "name": "Test credentials - Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### Sub-workflows\n\nAfter finishing the other steps, don’t forget to configure the secondary workflows with their credentials!!\n\n- [ ] 2. Supabase agent \n- [ ] 3. Supabase MCP\n- [ ] 4. Calendar MCP",
+        "height": 200,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4120,
+        700
+      ],
+      "id": "35291f90-e411-4ce8-8a2c-f2c995ed557d",
+      "name": "Sticky Note29"
+    }
+  ],
+  "pinData": {
+    "WhatsApp Trigger": [
+      {
+        "json": {
+          "messaging_product": "whatsapp",
+          "metadata": {
+            "display_phone_number": "212704509060",
+            "phone_number_id": "662085020321594"
+          },
+          "contacts": [
+            {
+              "profile": {
+                "name": "Guess Who"
+              },
+              "wa_id": "212645594215"
+            }
+          ],
+          "messages": [
+            {
+              "from": "212645594215",
+              "id": "wamid.HBgMMjEyNjQ1NTk0MjE1FQIAEhgWM0VCMERDREU0MEYzNzA1Q0U2MjU3MgA=",
+              "timestamp": "1750607663",
+              "text": {
+                "body": "hello"
+              },
+              "type": "text"
+            }
+          ],
+          "field": "messages"
+        }
+      }
+    ],
+    "Response": [
+      {
+        "json": {
+          "reply": "Hello! I'm SchedulerAi, your virtual assistant for booking appointments with Omar.\n\nTo help you schedule your appointment, could you please tell me your name, email address, and your preferred date and time for the meeting?",
+          "notification_contact": "212645594215",
+          "notification_message": "hello"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Config": {
+      "main": [
+        [
+          {
+            "node": "Check Input Type1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client context": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Convert to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If message": {
+      "main": [
+        [
+          {
+            "node": "Business Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Context": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Client context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client": {
+      "main": [
+        [
+          {
+            "node": "New Client Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "React to message": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Mark Read/Typing Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Client Context": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Client": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set messages": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Messages": {
+      "main": [
+        [
+          {
+            "node": "Overlapping Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Overlapping Messages": {
+      "main": [
+        [
+          {
+            "node": "Delete Message Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Message Queue": {
+      "main": [
+        [
+          {
+            "node": "text input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Read/Typing Status": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Whatsapp Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run SQL Query1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supabase MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB Schema1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supabase MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get table definition1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supabase MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Get Events": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create events": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio": {
+      "main": [
+        [
+          {
+            "node": "Fix Mime Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix Mime Type": {
+      "main": [
+        [
+          {
+            "node": "Respond with Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text input": {
+      "main": [
+        [
+          {
+            "node": "If Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Audio": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Audio Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Prompt": {
+      "main": [
+        [
+          {
+            "node": "text input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image URL": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image": {
+      "main": [
+        [
+          {
+            "node": "Image + Text Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image + Text Prompt": {
+      "main": [
+        [
+          {
+            "node": "text input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to JSON": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Client": {
+      "main": [
+        [
+          {
+            "node": "Get Client",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Read/Typing Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response": {
+      "main": [
+        [
+          {
+            "node": "If Notified Via Whatsapp Tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Notified Via Whatsapp Tool": {
+      "main": [
+        [
+          {
+            "node": "Insert message For Conversation Full Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert message For Conversation Full Context": {
+      "main": [
+        [
+          {
+            "node": "If Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Input Type1": {
+      "main": [
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Casablanca",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "01a9008b-9b4a-46c3-b76e-ad747867f75c",
+  "meta": {
+    "instanceId": "461093ddfa406cde71c8f8e872d1a71c251f33208f2d0dd7e33190375be0b656"
+  },
+  "id": "V6PrbnV0a3fHsuYP",
+  "tags": []
+}

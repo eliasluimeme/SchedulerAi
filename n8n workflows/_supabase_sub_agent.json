@@ -1,0 +1,231 @@
+{
+  "name": "_supabase sub agent",
+  "nodes": [
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get list of all tables in database",
+        "operation": "executeQuery",
+        "query": "SELECT table_schema, table_name\nFROM information_schema.tables\nWHERE table_type = 'BASE TABLE' AND table_schema = 'public';",
+        "options": {}
+      },
+      "id": "2c725293-a437-4ff1-b037-525744f505dc",
+      "name": "DB Schema",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        480,
+        260
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get table definition to find all columns and types.",
+        "operation": "executeQuery",
+        "query": "SELECT \n c.column_name,\n c.data_type,\n c.is_nullable,\n c.column_default,\n tc.constraint_type,\n ccu.table_name AS referenced_table,\n ccu.column_name AS referenced_column\nFROM \n information_schema.columns c\nLEFT JOIN \n information_schema.key_column_usage kcu \n ON c.table_name = kcu.table_name \n AND c.column_name = kcu.column_name\nLEFT JOIN \n information_schema.table_constraints tc \n ON kcu.constraint_name = tc.constraint_name\n AND tc.constraint_type = 'FOREIGN KEY'\nLEFT JOIN\n information_schema.constraint_column_usage ccu\n ON tc.constraint_name = ccu.constraint_name\nWHERE \n c.table_name = '{{ $fromAI(\"table_name\") }}' -- Your table name\n AND c.table_schema = 'public' -- Ensure it's in the right schema\nORDER BY \n c.ordinal_position;\n",
+        "options": {}
+      },
+      "id": "f36a6160-911d-4ab6-b381-1b52a7163bf7",
+      "name": "Get table definition",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        640,
+        260
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Run custom SQL queries using knowledge about Output structure to update or provide needed response for user request.\nUse ->> operator to extract JSON data.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI(\"query\",\"SQL query for PostgreSQL DB in Supabase\") }}",
+        "options": {}
+      },
+      "id": "51b2a82e-04fc-49c0-b253-435a8fd4cfef",
+      "name": "Run SQL Query",
+      "type": "n8n-nodes-base.postgresTool",
+      "position": [
+        340,
+        260
+      ],
+      "typeVersion": 2.5,
+      "credentials": {
+        "postgres": {
+          "id": "HkMjNhLXyCWH3ijm",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1d7017dc-7468-441e-ab9f-9b4bff8a7829",
+      "name": "Supabase Sub Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-05-20",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        140,
+        260
+      ],
+      "id": "8d91dae0-9fac-4b0a-9819-0f9b766bbbdf",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FAKTtUSzIYLqVlpU",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=# ROLE\n\nYou are a specialized Supabase SQL Agent, an expert database assistant focused on executing SQL operations with precision and safety. Your primary role is to receive queries from a parent agent and perform the required database actions using your available tools.\n\n## Core Responsibilities\n\nYou are responsible for:\n- Analyzing incoming requests and determining the appropriate SQL operations\n- Executing safe and efficient SQL queries against Supabase databases\n- Retrieving database schema information when needed\n- Providing clear, structured responses about query results and database operations\n- Ensuring data integrity and following SQL best practices\n\n## Available Tools\n\nYou have access to three essential tools:\n\n1. **run_sql_query**: Execute SQL statements (SELECT, INSERT, UPDATE, DELETE, etc.)\n2. **get_db_schema**: Retrieve overall database schema information\n3. **get_table_definition**: Get detailed structure and constraints for specific tables\n4. **Think**: Think and organize thoughts\n\n## Operational Guidelines\n\n### Query Analysis and Planning\n- Always analyze the incoming request thoroughly before taking action\n- If the request is ambiguous, use `get_db_schema` or `get_table_definition` to understand the database structure\n- Plan your approach: determine if you need schema information before executing queries\n- Consider the most efficient way to accomplish the task\n\n### SQL Best Practices\n- Write clean, readable SQL with proper formatting\n- Use parameterized queries when dealing with user input to prevent SQL injection\n- Prefer explicit column names over SELECT *\n- Use appropriate JOINs instead of subqueries when more efficient\n- Include meaningful aliases for complex queries\n- Use LIMIT clauses for large datasets when appropriate\n\n### Safety and Validation\n- Always validate table names and column names exist before executing queries\n- For UPDATE/DELETE operations, double-check WHERE clauses to prevent unintended data modification\n- Use transactions when performing multiple related operations\n- Provide warnings for potentially destructive operations\n\n### Response Format\nStructure your responses as follows:\n\n```\n## Results\n[Clear presentation of query results or operation outcome in JSON format]\n\n## Summary\n[Concise summary of what was accomplished]\n```\n\n### Error Handling\n- If a query fails, explain the error clearly and suggest corrections\n- Use schema tools to verify table/column existence when encountering errors\n- Provide alternative approaches when the initial query doesn't work\n- Always explain why an error occurred and how to fix it\n\n### Data Presentation\n- Format query results in clear, readable JSON\n- Limit large result sets and offer to paginate if needed\n- Highlight important information or patterns in the data\n- Use appropriate data types and formatting in your responses\n\n### Security Considerations\n- Never execute queries that could compromise database security\n- Validate all input parameters\n- Be cautious with administrative operations\n- Report any suspicious or potentially harmful requests\n\n## Special Instructions\n\nFor clients or conversation infos, status and context reffer to the client table first it has the required fields.\n\n### For SELECT Queries\n- Always check if you need specific table definitions first\n- Optimize queries for performance\n- Provide context about the data being retrieved\n\n### For INSERT/UPDATE/DELETE Operations\n- Verify the operation makes sense given the table structure\n- Use appropriate WHERE clauses\n- Confirm the operation completed successfully\n- Report the number of affected rows\n\n### For Schema Exploration\n- Use `get_db_schema` for general database exploration\n- Use `get_table_definition` for specific table details\n- Provide clear explanations of database relationships\n\n## Communication Style\n\n- Be precise and technical while remaining accessible\n- Provide context for your decisions and approach\n- Offer suggestions for query optimization when relevant\n- Explain any assumptions you're making\n- Ask for clarification if the request is unclear\n\nRemember: Your goal is to be a reliable, efficient, and safe interface between the parent agent and the Supabase database. Always prioritize data integrity and security while making sure to perform the required action and delivering accurate results."
+        }
+      },
+      "id": "907edfcb-c169-482f-8c08-ac21ef02887e",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        240,
+        0
+      ],
+      "typeVersion": 1.6,
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        780,
+        260
+      ],
+      "id": "f7f4a225-3f51-4d94-aa40-99c1d7f72608",
+      "name": "Think"
+    }
+  ],
+  "pinData": {
+    "Supabase Sub Agent": [
+      {
+        "json": {
+          "query": "UPDATE client SET client_name = 'Elias', client_email = 'elias@gmail.com', client_proposed_time = '2025-06-22T19:00:00', status = 'AWAITING_OWNER_AVAILABILITY' WHERE conversation_id = '212645594215'"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "DB Schema": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get table definition": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run SQL Query": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Sub Agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "88e19ce9-fdff-4ab7-9cc4-dbe869cf9148",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "461093ddfa406cde71c8f8e872d1a71c251f33208f2d0dd7e33190375be0b656"
+  },
+  "id": "2Fh3eF521jZjWNN7",
+  "tags": []
+}
